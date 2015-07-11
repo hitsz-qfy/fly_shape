@@ -9,7 +9,7 @@ FlyLine::FlyLine()
       land_t(0.0),
       allline_t(5.0),
       allland_t(3.0),
-      AllowError(0.01)
+      AllowError(0.05)
 {
     beginpoint_ << 0.0, 0.0, 1.0;
     endpoint_   << 1.0, 0.0, 1.0;
