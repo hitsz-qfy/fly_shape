@@ -23,7 +23,9 @@ private:
 
     double   AllowError;
     double   line_t;
+    double   land_t;
     double   allline_t;  // the time from the begin point to end point of line
+    double   allland_t;
     ros::Time       t_now;
     ros::Time       t_prev;
     ros::NodeHandle l_nh_;
@@ -38,7 +40,7 @@ private:
     bool    in_land;
 
     void takeoff(Vector3d bp);
-    void land(Vector3d ep);
+    void land(Vector3d ep, double t);
     void line(Vector3d bp, double t, Vector3d ep);
     void publish();
 };

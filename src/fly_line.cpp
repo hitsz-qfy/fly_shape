@@ -6,7 +6,9 @@ FlyLine::FlyLine()
       in_line(false),
       in_land(false),
       line_t(0.0),
+      land_t(0.0),
       allline_t(5.0),
+      allland_t(3.0),
       AllowError(0.01)
 {
     beginpoint_ << 0.0, 0.0, 1.0;
@@ -54,7 +56,11 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
     if(in_land == true)
     {
         ROS_INFO("it is landing!!!");
-        land(endpoint_);
+        t_now = ros::Time::now();
+        double dt = (t_now.toNSec() - t_prev.toNSec())/1e+9;
+        dt = dt < 0.1 ? dt : 0;
+        land_t += dt;
+        land(endpoint_, land_t);
     }
 
     publish();
@@ -65,7 +71,7 @@ void FlyLine::takeoff(Vector3d bp)
     geometry_msgs::PoseStamped takeoff_sp;
     takeoff_sp.pose.position.x = bp(0);
     takeoff_sp.pose.position.y = bp(1);
-    takeoff_sp.pose.position.z = bp(2);
+    takeoff_sp.pose.position.z = bp(2) ;
     takeoff_sp.pose.orientation.w = 1.0;
     takeoff_sp.pose.orientation.x = 0.0;
     takeoff_sp.pose.orientation.y = 0.0;
@@ -74,12 +80,12 @@ void FlyLine::takeoff(Vector3d bp)
     pose_pub_ = takeoff_sp;
 }
 
-void FlyLine::land(Vector3d ep)
+void FlyLine::land(Vector3d ep, double t)
 {
     geometry_msgs::PoseStamped land_sp;
     land_sp.pose.position.x = ep(0);
     land_sp.pose.position.y = ep(1);
-    land_sp.pose.position.z = ep(2);
+    land_sp.pose.position.z = ep(2) - ep(2) / allland_t * t;
     land_sp.pose.orientation.w = 1.0;
     land_sp.pose.orientation.x = 0.0;
     land_sp.pose.orientation.y = 0.0;
