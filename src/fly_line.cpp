@@ -1,4 +1,4 @@
-#include "../include/fly_shaple/flyline.h"
+#include "../include/fly_shape/flyline.h"
 
 FlyLine::FlyLine()
     : l_nh_("~"),
