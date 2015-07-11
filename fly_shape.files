@@ -1,3 +1,0 @@
-include/fly_shape/flyline.h
-src/fly_line.cpp
-src/fly_shape.cpp
