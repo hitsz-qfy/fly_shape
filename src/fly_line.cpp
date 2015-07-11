@@ -62,7 +62,7 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
         land_t += dt;
         land(endpoint_, land_t);
     }
-
+    t_prev = t_now;
     publish();
 }
 
