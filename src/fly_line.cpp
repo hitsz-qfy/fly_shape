@@ -83,14 +83,11 @@ void FlyLine::takeoff(Vector3d bp)
 
 void FlyLine::land(Vector3d ep, double t)
 {
+    t = (t <= allland_t ? t : allland_t);
     geometry_msgs::PoseStamped land_sp;
     land_sp.pose.position.x = ep(0);
     land_sp.pose.position.y = ep(1);
     land_sp.pose.position.z = ep(2) - ep(2) / allland_t * t;
-    if(land_sp.pose.position.z < 0.1)
-    {
-        land_sp.pose.position.z = 0.1;
-    }
     land_sp.pose.orientation.w = 1.0;
     land_sp.pose.orientation.x = 0.0;
     land_sp.pose.orientation.y = 0.0;
@@ -101,6 +98,7 @@ void FlyLine::land(Vector3d ep, double t)
 
 void FlyLine::line(Vector3d bp, double t, Vector3d ep)
 {
+    t = (t <= allline_t ? t : allline_t);
     geometry_msgs::PoseStamped line_sp;
     Vector3d d = ep - bp;
     line_sp.pose.position.x = bp(0) + d(0) / allline_t * t;
