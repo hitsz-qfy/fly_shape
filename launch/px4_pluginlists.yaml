@@ -1,10 +1,11 @@
 plugin_blacklist:
 # common
 - safety_area
+- gps
 # extras
 - image_pub
 - vibration
 - distance_sensor
-
+- vision_speed_estimate
 plugin_whitelist: []
 #- 'sys_*'
