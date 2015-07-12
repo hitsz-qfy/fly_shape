@@ -9,7 +9,8 @@ FlyLine::FlyLine()
       land_t(0.0),
       allline_t(5.0),
       allland_t(3.0),
-      AllowError(0.05)
+      AllowError_d(0.05),
+      AllowError_rad(0.15)
 {
     beginpoint_ << 0.0, 0.0, 1.0;
     endpoint_   << 1.0, 0.0, 1.0;
@@ -23,10 +24,10 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
     double roll, pitch, yaw;
     tf::Transform transform;
     tf::poseMsgToTF(msg->pose, transform);
-    if(fabs(msg->pose.position.x)                       < AllowError
-       && fabs(msg->pose.position.y)                    < AllowError
-       && fabs(msg->pose.position.z - beginpoint_(2))   < AllowError
-       && fabs(yaw)                                     < AllowError
+    if(fabs(msg->pose.position.x)                       < AllowError_d
+       && fabs(msg->pose.position.y)                    < AllowError_d
+       && fabs(msg->pose.position.z - beginpoint_(2))   < AllowError_d
+       && fabs(yaw)                                     < AllowError_rad
        && !in_line
        && !in_land)
     {

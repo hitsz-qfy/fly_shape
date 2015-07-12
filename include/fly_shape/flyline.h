@@ -21,7 +21,8 @@ private:
     Vector3d beginpoint_;
     Vector3d endpoint_;
 
-    double   AllowError;
+    double   AllowError_d;
+    double   AllowError_rad;
     double   line_t;
     double   land_t;
     double   allline_t;  // the time from the begin point to end point of line
