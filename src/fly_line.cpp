@@ -13,7 +13,7 @@ FlyLine::FlyLine()
       AllowError_rad(0.15)
 {
     beginpoint_ << 0.0, 0.0, 1.0;
-    endpoint_   << 22.0, 0.0, 1.0;
+    endpoint_   << 2.0, 0.0, 1.0;
     local_sub_  = l_nh_.subscribe("/mavros/local_position/local",100,&FlyLine::localCallBack, this);
     pos_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",100);
 //    att_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude",100);
