@@ -50,8 +50,8 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
         if(line_t >= allline_t)
         {
             ROS_INFO("line end!!!");
-            in_land == true;
-            in_line == false;
+            in_land = true;
+            in_line = false;
         }
     }
     if(in_land == true)
