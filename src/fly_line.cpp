@@ -87,6 +87,10 @@ void FlyLine::land(Vector3d ep, double t)
     land_sp.pose.position.x = ep(0);
     land_sp.pose.position.y = ep(1);
     land_sp.pose.position.z = ep(2) - ep(2) / allland_t * t;
+    if(land_sp.pose.position.z < 0.1)
+    {
+        land_sp.pose.position.z = 0.1;
+    }
     land_sp.pose.orientation.w = 1.0;
     land_sp.pose.orientation.x = 0.0;
     land_sp.pose.orientation.y = 0.0;
