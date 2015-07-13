@@ -7,6 +7,7 @@ FlyLine::FlyLine()
       in_land(false),
       line_t(0.0),
       land_t(0.0),
+      loiter_t(2.0),
       allline_t(5.0),
       allland_t(3.0),
       AllowError_d(0.05),
@@ -41,15 +42,29 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
     }
     if(in_line == true)
     {
-        ROS_INFO("Fly line!!!");
+
         t_now = ros::Time::now();
         double dt = (t_now.toNSec() - t_prev.toNSec())/1e+9;
         dt = dt < 0.1 ? dt : 0;
         line_t += dt;
-        line(beginpoint_, line_t, endpoint_);
-        if(line_t >= allline_t)
+        if(line_t < loiter_t)
         {
-            ROS_INFO("line end!!!");
+            ROS_INFO("Waiting 2 second in begin point!!!");
+            loiter(beginpoint_);
+        }
+        else if(line_t >= loiter_t && line_t <= allline_t + loiter_t)
+        {
+            ROS_INFO("Fly line!!!");
+            line(beginpoint_, line_t, endpoint_);
+        }
+        else if(line_t  > allline_t + loiter_t && line_t  <= allline_t + 2 * loiter_t)
+        {
+
+                ROS_INFO("line end!!!Waiting endpoint 2 second!!!");
+                loiter(endpoint_);
+        }
+        else
+        {
             in_land = true;
             in_line = false;
         }
@@ -79,6 +94,20 @@ void FlyLine::takeoff(Vector3d bp)
     takeoff_sp.pose.orientation.z = 0.0;
 
     pose_pub_ = takeoff_sp;
+}
+
+void FlyLine::loiter(Vector3d p)
+{
+    geometry_msgs::PoseStamped loiter_sp;
+    loiter_sp.pose.position.x = p(0);
+    loiter_sp.pose.position.y = p(1);
+    loiter_sp.pose.position.z = p(2);
+    loiter_sp.pose.orientation.w = 1.0;
+    loiter_sp.pose.orientation.x = 0.0;
+    loiter_sp.pose.orientation.y = 0.0;
+    loiter_sp.pose.orientation.z = 0.0;
+
+    pose_pub_ = loiter_sp;
 }
 
 void FlyLine::land(Vector3d ep, double t)

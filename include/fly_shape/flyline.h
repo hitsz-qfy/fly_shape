@@ -25,6 +25,7 @@ private:
     double   AllowError_rad;
     double   line_t;
     double   land_t;
+    double   loiter_t;
     double   allline_t;  // the time from the begin point to end point of line
     double   allland_t;
     ros::Time       t_now;
@@ -41,6 +42,7 @@ private:
     bool    in_land;
 
     void takeoff(Vector3d bp);
+    void loiter(Vector3d p);
     void land(Vector3d ep, double t);
     void line(Vector3d bp, double t, Vector3d ep);
     void publish();
