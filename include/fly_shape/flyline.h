@@ -41,6 +41,7 @@ private:
     bool    in_line;
     bool    in_land;
 
+    void init();
     void takeoff(Vector3d bp);
     void loiter(Vector3d p);
     void land(Vector3d ep, double t);

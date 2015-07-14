@@ -1,8 +1,13 @@
 <launch>
+    <arg name="fly_shape_yaml" default="$(find fly_shape)/launch/fly_shape.yaml"/>
+
     <node pkg="mocap_optitrack" type="mocap_node" name="mocap_node" respawn="false"
             launch-prefix="" required="true">
             <rosparam file="$(find mocap_optitrack)/config/mocap.yaml" command="load" />
             <remap from="/Robot_1/pose" to="/mavros/vision_pose/pose"/>
     </node>
-    <node pkg="fly_shape" type="fly_shape" name="fly_line" output="screen"/>
+
+    <rosparam command="load" file="$(arg fly_shape_yaml)" />
+    <node pkg="fly_shape" type="fly_shape" name="fly_line" output="screen">
+    </node>
 </launch>

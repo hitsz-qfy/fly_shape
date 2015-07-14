@@ -6,18 +6,9 @@ FlyLine::FlyLine()
       in_line(false),
       in_land(false),
       line_t(0.0),
-      land_t(0.0),
-      loiter_t(2.0),
-      allline_t(5.0),
-      allland_t(3.0),
-      AllowError_d(0.05),
-      AllowError_rad(0.15)
+      land_t(0.0)
 {
-    beginpoint_ << 0.0, 0.0, 1.0;
-    endpoint_   << 2.0, 0.0, 1.0;
-    local_sub_  = l_nh_.subscribe("/mavros/local_position/local",100,&FlyLine::localCallBack, this);
-    pos_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",100);
-//    att_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude",100);
+    init();
 }
 
 void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
@@ -80,6 +71,24 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
     }
     t_prev = t_now;
     publish();
+}
+
+void FlyLine::init()
+{
+    l_nh_.param<double>("alllint_t", allline_t, 5.0);
+    l_nh_.param<double>("allland_t",allland_t, 3.0);
+    l_nh_.param<double>("AllowError_d",AllowError_d, 0.05);
+    l_nh_.param<double>("AllowError_rad",AllowError_rad, 0.15);
+    l_nh_.param<double>("beginpoint/x",beginpoint_(0), 0.0);
+    l_nh_.param<double>("beginpoint/y",beginpoint_(1), 0.0);
+    l_nh_.param<double>("beginpoint/z",beginpoint_(2), 1.0);
+    l_nh_.param<double>("endpoint/x",endpoint_(0), 2.0);
+    l_nh_.param<double>("endpoint/y",endpoint_(1), 0.0);
+    l_nh_.param<double>("endpoint/y",endpoint_(2), 1.0);
+
+    local_sub_  = l_nh_.subscribe("/mavros/local_position/local",100,&FlyLine::localCallBack, this);
+    pos_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",100);
+//    att_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude",100);
 }
 
 void FlyLine::takeoff(Vector3d bp)
