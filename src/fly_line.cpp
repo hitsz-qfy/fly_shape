@@ -86,7 +86,7 @@ void FlyLine::init()
     l_nh_.param<double>("beginpoint/z",beginpoint_(2), 1.0);
     l_nh_.param<double>("endpoint/x",endpoint_(0), 2.0);
     l_nh_.param<double>("endpoint/y",endpoint_(1), 0.0);
-    l_nh_.param<double>("endpoint/y",endpoint_(2), 1.0);
+    l_nh_.param<double>("endpoint/z",endpoint_(2), 1.0);
 
     local_sub_  = l_nh_.subscribe("/mavros/local_position/local",100,&FlyLine::localCallBack, this);
     pos_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",100);
