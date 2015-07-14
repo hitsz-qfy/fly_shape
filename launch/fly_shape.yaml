@@ -1,6 +1,7 @@
 fly_line:
    allline_t: 5.0         #s
    allland_t: 3.0        #s
+   loiter_t:  2.0        #s
    AllowError_d: 0.05    #m
    AllowError_rad: 0.15  #rad
    beginpoint: {x: 0.0, y: 0.0, z: 1.0}

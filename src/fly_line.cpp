@@ -77,6 +77,8 @@ void FlyLine::init()
 {
     l_nh_.param<double>("alllint_t", allline_t, 5.0);
     l_nh_.param<double>("allland_t",allland_t, 3.0);
+    l_nh_.param<double>("loiter_t",loiter_t, 2.0);
+
     l_nh_.param<double>("AllowError_d",AllowError_d, 0.05);
     l_nh_.param<double>("AllowError_rad",AllowError_rad, 0.15);
     l_nh_.param<double>("beginpoint/x",beginpoint_(0), 0.0);
