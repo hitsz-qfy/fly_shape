@@ -14,8 +14,9 @@ FlyLine::FlyLine()
 void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
 {
     double roll, pitch, yaw;
-    tf::Transform transform;
-    tf::poseMsgToTF(msg->pose, transform);
+    tf::Quaternion q;
+    tf::quaternionMsgToTF(msg->pose.orientation, q);
+    tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
     if(fabs(msg->pose.position.x)                       < AllowError_d
        && fabs(msg->pose.position.y)                    < AllowError_d
        && fabs(msg->pose.position.z - beginpoint_(2))   < AllowError_d
