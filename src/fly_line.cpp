@@ -20,7 +20,7 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
     if(fabs(msg->pose.position.x)                       < AllowError_d
        && fabs(msg->pose.position.y)                    < AllowError_d
        && fabs(msg->pose.position.z - beginpoint_(2))   < AllowError_d
-       && fabs(yaw)                                     < AllowError_rad
+      // && fabs(yaw)                                     < AllowError_rad
        && !in_line
        && !in_land)
     {
@@ -41,7 +41,7 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
         line_t += dt;
         if(line_t < loiter_t)
         {
-            ROS_INFO("Waiting 2 second in begin point!!!");
+            ROS_INFO("Waiting 2 seconds in begin point!!!");
             loiter(beginpoint_);
         }
         else if(line_t >= loiter_t && line_t <= allline_t + loiter_t)
@@ -76,20 +76,26 @@ void FlyLine::localCallBack(const geometry_msgs::PoseStampedConstPtr &msg)
 
 void FlyLine::init()
 {
-    l_nh_.param<double>("alllint_t", allline_t, 5.0);
-    l_nh_.param<double>("allland_t",allland_t, 3.0);
-    l_nh_.param<double>("loiter_t",loiter_t, 2.0);
+    l_nh_.param<double>("alllint_t", allline_t, 10.0);
+    l_nh_.param<double>("allland_t",allland_t, 1.5);
+    l_nh_.param<double>("loiter_t",loiter_t, 5.0);
 
-    l_nh_.param<double>("AllowError_d",AllowError_d, 0.05);
+    l_nh_.param<double>("AllowError_d",AllowError_d, 0.1);
     l_nh_.param<double>("AllowError_rad",AllowError_rad, 0.15);
     l_nh_.param<double>("beginpoint/x",beginpoint_(0), 0.0);
     l_nh_.param<double>("beginpoint/y",beginpoint_(1), 0.0);
-    l_nh_.param<double>("beginpoint/z",beginpoint_(2), 1.0);
-    l_nh_.param<double>("endpoint/x",endpoint_(0), 2.0);
-    l_nh_.param<double>("endpoint/y",endpoint_(1), 0.0);
-    l_nh_.param<double>("endpoint/z",endpoint_(2), 1.0);
+    l_nh_.param<double>("beginpoint/z",beginpoint_(2), 0.8);
 
-    local_sub_  = l_nh_.subscribe("/mavros/local_position/local",100,&FlyLine::localCallBack, this);
+    //l_nh_.param<double>("endpoint/x",endpoint_(0), 0.0);
+    //l_nh_.param<double>("endpoint/y",endpoint_(1), -2.0);
+    //l_nh_.param<double>("endpoint/z",endpoint_(2), 1.2);//fly along with -y axis
+
+
+    l_nh_.param<double>("endpoint/x",endpoint_(0), 2.0);
+    l_nh_.param<double>("endpoint/y",endpoint_(1), 0);
+    l_nh_.param<double>("endpoint/z",endpoint_(2), 0.8);//fly along with +x axis
+
+    local_sub_  = l_nh_.subscribe("/mavros/vision_pose/pose",100,&FlyLine::localCallBack, this);
     pos_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",100);
 //    att_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude",100);
 }
@@ -100,10 +106,10 @@ void FlyLine::takeoff(Vector3d bp)
     takeoff_sp.pose.position.x = bp(0);
     takeoff_sp.pose.position.y = bp(1);
     takeoff_sp.pose.position.z = bp(2) ;
-    takeoff_sp.pose.orientation.w = 1.0;
     takeoff_sp.pose.orientation.x = 0.0;
     takeoff_sp.pose.orientation.y = 0.0;
-    takeoff_sp.pose.orientation.z = 0.0;
+    takeoff_sp.pose.orientation.z = 0.7071067812;
+    takeoff_sp.pose.orientation.w = 0.7071067812;
 
     pose_pub_ = takeoff_sp;
 }
@@ -114,10 +120,10 @@ void FlyLine::loiter(Vector3d p)
     loiter_sp.pose.position.x = p(0);
     loiter_sp.pose.position.y = p(1);
     loiter_sp.pose.position.z = p(2);
-    loiter_sp.pose.orientation.w = 1.0;
+    loiter_sp.pose.orientation.w = 0.7071067812;
     loiter_sp.pose.orientation.x = 0.0;
     loiter_sp.pose.orientation.y = 0.0;
-    loiter_sp.pose.orientation.z = 0.0;
+    loiter_sp.pose.orientation.z = 0.7071067812;
 
     pose_pub_ = loiter_sp;
 }
@@ -129,10 +135,10 @@ void FlyLine::land(Vector3d ep, double t)
     land_sp.pose.position.x = ep(0);
     land_sp.pose.position.y = ep(1);
     land_sp.pose.position.z = ep(2) - ep(2) / allland_t * t;
-    land_sp.pose.orientation.w = 1.0;
+    land_sp.pose.orientation.w = 0.7071067812;
     land_sp.pose.orientation.x = 0.0;
     land_sp.pose.orientation.y = 0.0;
-    land_sp.pose.orientation.z = 0.0;
+    land_sp.pose.orientation.z = 0.7071067812;
 
     pose_pub_ = land_sp;
 }
@@ -143,12 +149,12 @@ void FlyLine::line(Vector3d bp, double t, Vector3d ep)
     geometry_msgs::PoseStamped line_sp;
     Vector3d d = ep - bp;
     line_sp.pose.position.x = bp(0) + d(0) / allline_t * t;
-    line_sp.pose.position.y = ep(1) + d(1) / allline_t * t;
+    line_sp.pose.position.y = bp(1) + d(1) / allline_t * t;
     line_sp.pose.position.z = bp(2) + d(2) / allline_t * t;
-//    line_sp.pose.orientation.w = 1.0;
-//    line_sp.pose.orientation.x = 0.0;
-//    line_sp.pose.orientation.y = 0.0;
-//    line_sp.pose.orientation.z = 0.0;
+    line_sp.pose.orientation.w = 0.7071067812;
+    line_sp.pose.orientation.x = 0.0;
+    line_sp.pose.orientation.y = 0.0;
+    line_sp.pose.orientation.z = 0.7071067812;
 
     pose_pub_ = line_sp;
 }

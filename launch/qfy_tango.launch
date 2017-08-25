@@ -1,0 +1,11 @@
+<launch>
+
+  <arg name="server" default="localhost"/>
+  <node pkg="tango_pose" type="tango_pose.py" name="tango_pose" output="screen">
+    <remap from="/tango_pose" to="/mavros/vision_pose/pose"/>
+  </node>
+
+  <node pkg="fly_shape" type="qfy_tango" name="qfy_tango" output="screen">
+  </node>
+  <node pkg="fly_shape" name="grasp_service" type="srv_test.py" output="screen"></node>
+</launch>

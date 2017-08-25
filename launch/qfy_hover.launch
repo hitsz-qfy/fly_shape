@@ -1,5 +1,5 @@
 <launch>
-    <arg name="fly_shape_yaml" default="$(find fly_shape)/launch/fly_shape.yaml"/>
+    <!--<arg name="fly_shape_yaml" default="$(find fly_shape)/launch/qfy_hover_node.yaml"/>-->
 
   <arg name="server" default="localhost"/>
 
@@ -24,7 +24,10 @@
     <remap from="/vrpn_client_node/three/pose" to="/mavros/vision_pose/pose"/>
   </node>
 
-    <rosparam command="load" file="$(arg fly_shape_yaml)" />
-    <node pkg="fly_shape" type="fly_shape" name="fly_line" output="screen">
-    </node>
+  <!--<rosparam command="load" file="$(arg fly_shape_yaml)" />-->
+  <node pkg="fly_shape" type="qfy_hover_node" name="qfy_hover_node" output="screen">
+  </node>
+  <!--<node pkg="fly_shape" type="qfy_tango" name="qfy_tango" output="screen">-->
+  <!--</node>-->
+  <node pkg="fly_shape" name="grasp_service" type="srv_test.py" output="screen"></node>
 </launch>
