@@ -1,0 +1,35 @@
+<launch>
+    <!--<arg name="fly_shape_yaml" default="$(find fly_shape)/launch/qfy_hover_node.yaml"/>-->
+
+  <arg name="server" default="localhost"/>
+
+  <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn_client_node" output="screen">
+    <rosparam subst_value="true">
+      server: 192.168.1.105
+      port: 3883
+
+      update_frequency: 100.0
+      frame_id: world
+
+      # Use the VRPN server's time, or the client's ROS time.
+      use_server_time: false
+      broadcast_tf: true
+
+      # Must either specify refresh frequency > 0.0, or a list of trackers to create
+      refresh_tracker_frequency: 1.0
+      trackers:
+      - three
+      #- SecondTracker
+    </rosparam>
+    <remap from="/vrpn_client_node/three/pose" to="/mavros/vision_pose/pose"/>
+  </node>
+
+  <!--<rosparam command="load" file="$(arg fly_shape_yaml)" />-->
+  <node pkg="fly_shape" type="uav_track" name="uav_track" output="screen">
+  </node>
+  <!--<node pkg="fly_shape" type="qfy_tango" name="qfy_tango" output="screen">-->
+  <!--</node>-->
+  <node pkg="qfy_dynamixel" name="uav_vs" type="uav_vs.py" output="screen">
+  </node>
+  <node pkg="qfy_dynamixel" name="vs_interplation" type="vs_interplation.py" output="screen"/>
+</launch>

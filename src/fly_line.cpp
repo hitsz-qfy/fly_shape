@@ -108,8 +108,8 @@ void FlyLine::takeoff(Vector3d bp)
     takeoff_sp.pose.position.z = bp(2) ;
     takeoff_sp.pose.orientation.x = 0.0;
     takeoff_sp.pose.orientation.y = 0.0;
-    takeoff_sp.pose.orientation.z = 0.7071067812;
-    takeoff_sp.pose.orientation.w = 0.7071067812;
+    takeoff_sp.pose.orientation.z = 0.0;
+    takeoff_sp.pose.orientation.w = 1.0;
 
     pose_pub_ = takeoff_sp;
 }
@@ -120,10 +120,10 @@ void FlyLine::loiter(Vector3d p)
     loiter_sp.pose.position.x = p(0);
     loiter_sp.pose.position.y = p(1);
     loiter_sp.pose.position.z = p(2);
-    loiter_sp.pose.orientation.w = 0.7071067812;
+    loiter_sp.pose.orientation.w = 1.0;
     loiter_sp.pose.orientation.x = 0.0;
     loiter_sp.pose.orientation.y = 0.0;
-    loiter_sp.pose.orientation.z = 0.7071067812;
+    loiter_sp.pose.orientation.z = 0.0;
 
     pose_pub_ = loiter_sp;
 }
@@ -135,10 +135,10 @@ void FlyLine::land(Vector3d ep, double t)
     land_sp.pose.position.x = ep(0);
     land_sp.pose.position.y = ep(1);
     land_sp.pose.position.z = ep(2) - ep(2) / allland_t * t;
-    land_sp.pose.orientation.w = 0.7071067812;
+    land_sp.pose.orientation.w = 1.0;
     land_sp.pose.orientation.x = 0.0;
     land_sp.pose.orientation.y = 0.0;
-    land_sp.pose.orientation.z = 0.7071067812;
+    land_sp.pose.orientation.z = 0.0;
 
     pose_pub_ = land_sp;
 }
@@ -151,10 +151,10 @@ void FlyLine::line(Vector3d bp, double t, Vector3d ep)
     line_sp.pose.position.x = bp(0) + d(0) / allline_t * t;
     line_sp.pose.position.y = bp(1) + d(1) / allline_t * t;
     line_sp.pose.position.z = bp(2) + d(2) / allline_t * t;
-    line_sp.pose.orientation.w = 0.7071067812;
+    line_sp.pose.orientation.w = 1.0;
     line_sp.pose.orientation.x = 0.0;
     line_sp.pose.orientation.y = 0.0;
-    line_sp.pose.orientation.z = 0.7071067812;
+    line_sp.pose.orientation.z = 0.0;
 
     pose_pub_ = line_sp;
 }

@@ -1,5 +1,7 @@
 #include "ros/ros.h"
 #include "ros/time.h"
+#include <tf/transform_broadcaster.h>
+
 #include <geometry_msgs/PoseStamped.h>
 #include "tf/transform_broadcaster.h"
 #include "std_msgs/Bool.h"
@@ -8,6 +10,7 @@
 #include <eigen3/Eigen/Eigen>
 #include "qfy_dynamixel/BeginGrasp.h"
 #include "qfy_dynamixel/MoveUAV.h"
+#include "dynamixel_msgs/MotorStateFloatList.h"
 
 #include "control_msgs/FollowJointTrajectoryActionResult.h"
 #include "control_msgs/FollowJointTrajectoryFeedback.h"
@@ -29,9 +32,11 @@ private:
     double   line_t;
     double   pre_line_t;
     double   land_t;
+    double   takeoff_t;
     double   loiter_t;
     double   allline_t;  // the time from the begin point to end point of line
     double   allland_t;
+    double   alltakeoff_t;
     double   lambda;
     ros::Time       t_now;
     ros::Time       t_prev;
@@ -44,6 +49,11 @@ private:
     ros::Subscriber uav_move_sub;
     ros::Subscriber land_flag_sub;
     ros::Subscriber check_join_sub;
+
+    tf::TransformBroadcaster br;
+    tf::Transform transform_uav_des;
+    tf::Transform transform_uav_cur;
+    tf::Transform transform_uav_move;
 
     ros::ServiceClient client_init_manipulator;
     bool first_call_init;
@@ -65,6 +75,7 @@ private:
     bool init_done;
     bool check_init;
     bool land_flag;
+    bool uav_move_flag;
 
     void init();
     void takeoff(const Vector3d);
@@ -73,13 +84,14 @@ private:
     void publish();
 
     void localcallback(const geometry_msgs::PoseStampedConstPtr& msg);
-    void joint_trajectory_callback(const control_msgs::FollowJointTrajectoryActionResult & msg);
-    void mx_joint_callback(const control_msgs::FollowJointTrajectoryFeedback & msg);
+//    void joint_trajectory_callback(const control_msgs::FollowJointTrajectoryActionResult & msg);
+    void mx_joint_callback(const dynamixel_msgs::MotorStateFloatList & msg);
     void uav_move_callback(const geometry_msgs::PoseStampedConstPtr &);
     void land_signal_callback(const std_msgs::Bool &);
     void check_joint_initialization(const std_msgs::Bool &);
 
     void low_pass(geometry_msgs::PoseStamped);
+    void tf_pub();
 };
 
 QFYUavtrack::QFYUavtrack()
@@ -96,6 +108,7 @@ QFYUavtrack::QFYUavtrack()
       init_done(false),
       check_init(false),
       land_flag(false),
+      uav_move_flag(false),
       lambda(0.1)
 {
     init();
@@ -105,21 +118,23 @@ void QFYUavtrack::init()
 {
     l_nh_.param<double>("alllint_t", allline_t, 10.0);
     l_nh_.param<double>("allland_t",allland_t, 1.5);
+    l_nh_.param<double>("alltakeoff_t",alltakeoff_t,5.0);
     l_nh_.param<double>("loiter_t",loiter_t, 10.0);
 
     l_nh_.param<double>("AllowError_d",AllowError_d, 0.1);
     l_nh_.param<double>("AllowError_rad",AllowError_rad, 0.15);
     l_nh_.param<double>("beginpoint/x",beginpoint_(0), 0.0);
     l_nh_.param<double>("beginpoint/y",beginpoint_(1), 0.0);
-    l_nh_.param<double>("beginpoint/z",beginpoint_(2), 0.8);
+    l_nh_.param<double>("beginpoint/z",beginpoint_(2), 0.6);
 
 
     local_sub_  = l_nh_.subscribe("/mavros/vision_pose/pose",100,&QFYUavtrack::localcallback, this);
     pos_sp_pub_ = l_nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",100);
+
     client_grasp = l_nh_.serviceClient<qfy_dynamixel::BeginGrasp>("/begin_grasp");
     client_init_manipulator = l_nh_.serviceClient<qfy_dynamixel::BeginGrasp>("/init_position");
 //    trajectory_sub = l_nh_.subscribe("/m_arm_controller/follow_joint_trajectory/result", 100, &QFYUavtrack::joint_trajectory_callback,this);
-    mx_joint_sub = l_nh_.subscribe("/m_arm_controller/state", 100, &QFYUavtrack::mx_joint_callback, this);
+    mx_joint_sub = l_nh_.subscribe("/mx_joint_controller/state", 100, &QFYUavtrack::mx_joint_callback, this);
     uav_move_sub = l_nh_.subscribe("/uav_move", 100, &QFYUavtrack::uav_move_callback, this);
     land_flag_sub = l_nh_.subscribe("/land_signal", 100, &QFYUavtrack::land_signal_callback, this);
     check_join_sub = l_nh_.subscribe("/check_joint_trj", 100, &QFYUavtrack::check_joint_initialization, this);
@@ -132,8 +147,18 @@ void QFYUavtrack::init()
     lowpass_pre.pose.position.z = beginpoint_(2);
     lowpass_pre.pose.orientation.x = 0.;
     lowpass_pre.pose.orientation.y = 0.;
-    lowpass_pre.pose.orientation.z = 0.;
-    lowpass_pre.pose.orientation.w = 1.;
+    lowpass_pre.pose.orientation.z = 0.70710678;
+    lowpass_pre.pose.orientation.w = 0.70710678;
+
+    pose_pub_.pose.orientation.x = 0.;
+    pose_pub_.pose.orientation.y = 0.;
+    pose_pub_.pose.orientation.z = 0.70710678;
+    pose_pub_.pose.orientation.w = 0.70710678;
+
+    uav_setpose.pose.orientation.x = 0.;
+    uav_setpose.pose.orientation.y = 0.;
+    uav_setpose.pose.orientation.z = 0.70710678;
+    uav_setpose.pose.orientation.w = 0.70710678;
 }
 
 void QFYUavtrack::land_signal_callback(const std_msgs::Bool &msg)
@@ -141,6 +166,7 @@ void QFYUavtrack::land_signal_callback(const std_msgs::Bool &msg)
     if(msg.data)
     {
         land_flag = true;
+        ROS_INFO_ONCE("Get landing signal!!");
     }
     else
         land_flag = false;
@@ -151,7 +177,7 @@ void QFYUavtrack::check_joint_initialization(const std_msgs::Bool & msg)
     if(msg.data)
     {
         joint_trj_done = true;
-        ROS_INFO("Trajectory callback done!!");
+        ROS_INFO_ONCE("Trajectory callback done!!");
     }
     else
         joint_trj_done = false;
@@ -167,16 +193,16 @@ void QFYUavtrack::check_joint_initialization(const std_msgs::Bool & msg)
 //}
 */
 
-void QFYUavtrack::mx_joint_callback(const control_msgs::FollowJointTrajectoryFeedback & msg)
+void QFYUavtrack::mx_joint_callback(const dynamixel_msgs::MotorStateFloatList & msg)
 {
     if(!init_done){
-        if(fabs(msg.actual.positions[0] - 1.57) < 0.15
-                &&fabs(msg.actual.positions[1] - 1.55) < 0.15
-                       &&fabs(msg.actual.positions[2] - 1.2) < 0.15){
+        if(fabs(msg.motor_states[0].position - 1.57) < 0.15
+                &&fabs(msg.motor_states[1].position - 1.55) < 0.15
+                       &&fabs(msg.motor_states[2].position - 1.2) < 0.15){
             init_done = true;
+            check_init = true;
         }
     }
-    check_init = true;
 }
 
 void QFYUavtrack::uav_move_callback(const geometry_msgs::PoseStampedConstPtr & msg)
@@ -189,8 +215,42 @@ void QFYUavtrack::uav_move_callback(const geometry_msgs::PoseStampedConstPtr & m
     uav_setpose.pose.orientation.y = msg->pose.orientation.y;
     uav_setpose.pose.orientation.z = msg->pose.orientation.z;
     uav_setpose.pose.orientation.w = msg->pose.orientation.w;
+
+    uav_move_flag = true;
 }
 
+void QFYUavtrack::tf_pub()
+{
+    transform_uav_cur.setOrigin(tf::Vector3(local_pose.pose.position.x,
+                                            local_pose.pose.position.y,
+                                            local_pose.pose.position.z));
+    transform_uav_des.setOrigin(tf::Vector3(pose_pub_.pose.position.x,
+                                            pose_pub_.pose.position.y,
+                                            pose_pub_.pose.position.z));
+
+    transform_uav_cur.setRotation(tf::Quaternion(local_pose.pose.orientation.x,
+                                                 local_pose.pose.orientation.y,
+                                                 local_pose.pose.orientation.z,
+                                                 local_pose.pose.orientation.w));
+    transform_uav_des.setRotation(tf::Quaternion(pose_pub_.pose.orientation.x,
+                                                 pose_pub_.pose.orientation.y,
+                                                 pose_pub_.pose.orientation.z,
+                                                 pose_pub_.pose.orientation.w));
+    if(uav_move_flag)
+    {
+        transform_uav_move.setOrigin(tf::Vector3(uav_setpose.pose.position.x,
+                                                 uav_setpose.pose.position.y,
+                                                 uav_setpose.pose.position.z));
+        transform_uav_move.setRotation(tf::Quaternion(uav_setpose.pose.orientation.x,
+                                                      uav_setpose.pose.orientation.y,
+                                                      uav_setpose.pose.orientation.z,
+                                                      uav_setpose.pose.orientation.w));
+        br.sendTransform(tf::StampedTransform(transform_uav_move, ros::Time::now(), "world", "uav_move"));
+    }
+
+    br.sendTransform(tf::StampedTransform(transform_uav_cur, ros::Time::now(), "world", "uav_cur"));
+    br.sendTransform(tf::StampedTransform(transform_uav_des, ros::Time::now(), "world", "uav_des"));
+}
 
 void QFYUavtrack::localcallback(const geometry_msgs::PoseStampedConstPtr & msg)
 {
@@ -207,7 +267,7 @@ void QFYUavtrack::localcallback(const geometry_msgs::PoseStampedConstPtr & msg)
 
     diff_time = t_now - t_prev;
 
-    if(fabs(msg->pose.position.z - 0.75) < 0.1
+    if(fabs(msg->pose.position.z - beginpoint_(2)) < 0.07
        && !in_line
        && !in_land)
     {
@@ -231,12 +291,13 @@ void QFYUavtrack::localcallback(const geometry_msgs::PoseStampedConstPtr & msg)
 
     t_prev = t_now;
     publish();
+    tf_pub();
 }
 
 void QFYUavtrack::takeoff(const Vector3d bp)
 {
 
-    if(check_init){
+    if(!check_init){
         if(!init_done){
             ROS_INFO_ONCE("Init not done");
             if(!joint_trj_done){
@@ -255,32 +316,34 @@ void QFYUavtrack::takeoff(const Vector3d bp)
                 }
             }
         }
-        else{
+    }
+    else{
             ROS_INFO_ONCE("Init done");
-            if(!first_call_init)
-            {
-                //BUG:
-                //
-                ROS_WARN_ONCE("No need to initialize!");
-                ROS_INFO_ONCE("Take off!!!!!!");
-            }
-            else{
-                if(joint_trj_done)
-                {
-                    ROS_INFO_ONCE("Take off!!!!!!");
-                }
-            }
+//            if(!first_call_init)
+//            {
+//                //BUG:
+//                //
+//                ROS_WARN_ONCE("No need to initialize!");
+//                ROS_INFO_ONCE("Take off!!!!!!");
+//            }
+//            else{
+//                if(joint_trj_done)
+//                {
+//                    ROS_INFO_ONCE("Take off!!!!!!");
+//                }
+//            }
+            ROS_WARN_ONCE("Take off!!!!!!");
+//            t = ( t < alltakeoff_t ? t: alltakeoff_t);
             pose_pub_.pose.position.x = bp(0);
             pose_pub_.pose.position.y = bp(1);
             pose_pub_.pose.position.z = bp(2);
 
             pose_pub_.pose.orientation.x = 0.;
             pose_pub_.pose.orientation.y = 0.;
-            pose_pub_.pose.orientation.z = 0.;
-            pose_pub_.pose.orientation.w = 1.;
+            pose_pub_.pose.orientation.z = 0.70710678;
+            pose_pub_.pose.orientation.w = 0.70710678;
 
         }
-    }
 }
 
 void QFYUavtrack::low_pass(geometry_msgs::PoseStamped p)
@@ -324,25 +387,27 @@ void QFYUavtrack::uav_track(const Vector3d & bp)
         }
     }
     //low-pass filter target pose
-    /*
-    low_pass(uav_setpose);
 
-    pose_pub_.pose.position.x = uav_setpose.pose.position.x;
-    pose_pub_.pose.position.y = uav_setpose.pose.position.y;
-    pose_pub_.pose.position.z = uav_setpose.pose.position.z;
-    pose_pub_.pose.orientation.x = uav_setpose.pose.orientation.x;
-    pose_pub_.pose.orientation.y = uav_setpose.pose.orientation.y;
-    pose_pub_.pose.orientation.z = uav_setpose.pose.orientation.z;
-    pose_pub_.pose.orientation.w = uav_setpose.pose.orientation.w;
-    */
+//    low_pass(uav_setpose);
+
+//    pose_pub_.pose.position.x = uav_setpose.pose.position.x;
+//    pose_pub_.pose.position.y = uav_setpose.pose.position.y;
+//    pose_pub_.pose.position.z = uav_setpose.pose.position.z;
+//    pose_pub_.pose.orientation.x = uav_setpose.pose.orientation.x;
+//    pose_pub_.pose.orientation.y = uav_setpose.pose.orientation.y;
+//    pose_pub_.pose.orientation.z = uav_setpose.pose.orientation.z;
+//    pose_pub_.pose.orientation.w = uav_setpose.pose.orientation.w;
+
+
     pose_pub_.pose.position.x = bp(0);
     pose_pub_.pose.position.y = bp(1);
     pose_pub_.pose.position.z = bp(2);
 
     pose_pub_.pose.orientation.x = 0.;
     pose_pub_.pose.orientation.y = 0.;
-    pose_pub_.pose.orientation.z = 0.;
-    pose_pub_.pose.orientation.w = 1.;
+    pose_pub_.pose.orientation.z = 0.70710678;
+    pose_pub_.pose.orientation.w = 0.70710678;
+
     //TODO:
     //need interpolation poses
 
@@ -364,10 +429,15 @@ void QFYUavtrack::land(const geometry_msgs::PoseStamped ep, double t)
     pose_pub_.pose.position.y = ep.pose.position.y;
     pose_pub_.pose.position.z = ep.pose.position.z * ( 1. - 1. / allland_t * t);
 
-    pose_pub_.pose.orientation.x = ep.pose.orientation.x;
-    pose_pub_.pose.orientation.y = ep.pose.orientation.y;
-    pose_pub_.pose.orientation.z = ep.pose.orientation.z;
-    pose_pub_.pose.orientation.w = ep.pose.orientation.w;
+//    pose_pub_.pose.orientation.x = ep.pose.orientation.x;
+//    pose_pub_.pose.orientation.y = ep.pose.orientation.y;
+//    pose_pub_.pose.orientation.z = ep.pose.orientation.z;
+//    pose_pub_.pose.orientation.w = ep.pose.orientation.w;
+
+    pose_pub_.pose.orientation.x = 0.;
+    pose_pub_.pose.orientation.y = 0.;
+    pose_pub_.pose.orientation.z = 0.70710678;
+    pose_pub_.pose.orientation.w = 0.70710678;
 
 }
 

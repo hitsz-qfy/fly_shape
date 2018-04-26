@@ -4,6 +4,6 @@ qfy_hover_node:
    loiter_t:  30.0        #s
    AllowError_d: 0.1  #m
    AllowError_rad: 0.15  #rad
-   beginpoint: {x: 0.0, y: 0.0 , z: 0.45}
-   endpoint: {x: 0.0, y: 0.0 , z: 0.45}
+   beginpoint: {x: 0.0, y: 0.0 , z: 0.8}
+   endpoint: {x: 0.0, y: 0.0 , z: 0.8}
   # endpoint: {x: 0.0, y: -1.0, z: 1.2}

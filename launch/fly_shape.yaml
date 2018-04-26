@@ -1,9 +1,9 @@
 fly_line:
-   allline_t:  10.0       #s
+   allline_t:  15.0       #s
    allland_t: 1.5        #s
-   loiter_t:  5.0        #s
+   loiter_t:  3.0        #s
    AllowError_d: 0.1  #m
    AllowError_rad: 0.15  #rad
-   beginpoint: {x: 0.0, y: 0.0 , z: 1.2}
-   endpoint: {x: 1.0, y: 0.0 , z: 1.2}
+   beginpoint: {x: 0.0, y: 0.0 , z: 0.8}
+   endpoint: {x: 1.0, y: 0.0 , z: 0.8}
   # endpoint: {x: 0.0, y: -1.0, z: 1.2}

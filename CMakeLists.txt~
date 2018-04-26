@@ -43,7 +43,6 @@ include_directories(include
  add_library(qfy_hover
    src/qfy_hover.cpp
  )
- add_dependencies(qfy_hover ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
  add_executable(qfy_hover_node src/qfy_hover_node.cpp)
  add_dependencies(qfy_hover_node fly_shape_generate_messages_cpp ${catkin_EXPORTED_TARGETS}) 
